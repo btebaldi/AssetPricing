@@ -1,8 +1,13 @@
-op <- par(mfrow = c(2, 2))
+# Limpiza de variaveis antigas
+rm(list = ls())
 
-# Função lambda: Sensitivity function #
+# bibliotecas utilizadas
+library(ggplot2)
+library(tibble)
 
-lambda =   function(S,sigma, gamma, phi){
+# Funcaoo lambda: Sensitivity function #
+# REESCREVER ESSA FUNCAO
+lambda = function(S, sigma, gamma, phi){
 #     Sb = sigma*sqrt(gamma/(1 - phi))
     Sb = 0.057    
     
@@ -14,13 +19,48 @@ lambda =   function(S,sigma, gamma, phi){
     return(LAMBDA)
     }
 
-# Função derivada dX/dc #
+# Fun??o derivada dX/dc #
+# REESCREVER ESSA FUNCAO
 dX =   function(S,sigma, gamma, phi){
-  1 - lambda(S)/((S)**(-1))-1)
+  1 - lambda(S)/(((S)**(-1))-1)
 }
 
-#### Gráficos ####
+#### Graficos ####
 
+x=seq(from=0, to=0.10, length.out = 1000)
+dX(x,sigma = 1, gamma = 2, phi = .13)
+
+# data = data.frame(xPoints = x , lambda = lambda(x,sigma = 1, gamma = 2, phi = .13), dX = dX(x,sigma = 1, gamma = 2, phi = .13))
+data = tibble(xPoints = x , lambda = lambda(x,sigma = 1, gamma = 2, phi = .13), dX = dX(x,sigma = 1, gamma = 2, phi = .13))
+
+
+
+# geom_curve(aes(x = x1, y = y1, xend = x2, yend = y2, colour = "curve"), data = df) +
+
+ggplot(data) +
+  geom_line(aes(x=xPoints, y=lambda)) +
+  labs(title="Binomial Distribution", # Title
+       subtitle="come", # Subtitle
+       caption="Source: Me!", # Caption
+       y='EixoY', 
+       x='Eixo X',
+       color=NULL)
+  
+ggplot(data) +
+  geom_line(aes(x=xPoints, y=dX)) +
+  geom_vline(xintercept = 0.057, colour = "blue") +
+  geom_hline(yintercept = 0) +
+  labs(title="Binomial Distribution", # Title
+       subtitle="come", # Subtitle
+       caption="Source: papa was a roling stone economics", # Caption
+       y='EixoY', 
+       x='Eixo X',
+       color=NULL)
+
+  
+  
+  
+  # OLD SHIT
 curve(lambda(x,sigma = 1, gamma = 2, phi = .13)
       ,.001
       ,.1
@@ -54,9 +94,8 @@ abline(v = exp(log(0.057) + 0.5*(1-0.057^2))
        ,lty = 3)
 abline(h = 0)
 abline(v = 0)
-par(op)
 
-### Daqui para baixo deu tudo errado! A função explode!
+### Daqui para baixo deu tudo errado! A fun??o explode!
 
 Gera_hist = function(S_0 , Sb, nper , phi , gamma , sigma, g){
 

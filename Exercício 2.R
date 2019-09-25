@@ -10,8 +10,12 @@ cbapmewrinstr = read.table("dataset/cbapmewrinstr.dat")
 cbapmvwrdata  = read.table("dataset/cbapmvwrdata.dat")
 cbapmvwrinstr = read.table("dataset/cbapmvwrinstr.dat")
 
-# atribuindo nomes (verificar! Nomes determinados olhando as m?dias) (palpite!) 
+head(cbapmewrdata)
+head(cbapmvwrdata)
+head(cbapmewrinstr)
+dim(cbapmewrdata)
 
+# atribuindo nomes (verificar! Nomes determinados olhando as medias) (palpite!) 
 names(cbapmewrdata) = c("C" , "R")
 names(cbapmvwrdata) = c("C" , "R")
 
@@ -22,7 +26,7 @@ names(cbapmvwrinstr) = c("Const" , "C-1", "C-2" , "R-1" , "R-2")
 head(cbind(cbapmewrdata,cbapmewrinstr)[,c("Const" , "C" ,"C-1", "C-2" , "R" , "R-1" , "R-2")], 5)
 head(cbind(cbapmvwrdata,cbapmvwrinstr)[,c("Const" , "C" ,"C-1", "C-2" , "R" , "R-1" , "R-2")], 5)
 
-# note que as bases s?o mensais!! 
+# note que as bases sao mensais!! 
 sapply(cbapmewrdata , mean)**12
 sapply(cbapmewrinstr , mean)**12
 
@@ -32,13 +36,12 @@ sapply(cbapmvwrinstr , mean)**12
 dim(cbapmvwrinstr)
 dim(cbapmvwrdata)
 
-# observa??o 2: todas as bases tem mesmo n?mero de observa??es. OK!
+# observacao 2: todas as bases tem mesmo numero de observacoes. OK!
 
 ################    Fim tratamento de bases   ##############
 
-###### Contru??o do GMM ##########
+###### Contrucao do GMM ##########
 J = function(param , base){
-
   beta  = param[1]
   gamma = param[2]
 
@@ -48,7 +51,7 @@ J = function(param , base){
       
   g = (beta*(C^(gamma))*R-1)*(as.matrix(Z))
 
-  return(g) #matrix (NxM), conforme exigido pela func?o GMM do R
+  return(g) #matrix (NxM), conforme exigido pela funcao GMM do R
 }
 
 ######## Tabela I ##################
@@ -59,14 +62,14 @@ EWR1 = gmm(   J
 	,x = cbind(cbapmewrdata,(cbapmewrinstr))[,-c(5,7)]
 	,t0=c(beta = 0, gamma = -1)
 	,type="twoStep"
-	,crit=1e-6
-	,tol = 1e-10
-	,itermax=400
+	,crit=1e-6     # 10e-7
+	,tol = 1e-10   # 1e-7
+	,itermax=400   # 100
 	,vcov="HAC"
 	,kernel ="Bartlett"
 	)
 
-# Estima??o com DOIS LAG 
+# Estimacao com DOIS LAG 
 EWR2 = gmm(   J
 	,x = cbind(cbapmewrdata,(cbapmewrinstr))
 	,t0=c(beta = 0, gamma = -1)
@@ -79,7 +82,7 @@ EWR2 = gmm(   J
 	)
 
  ########### Base VWR  ##############
-# Estima??o com um LAG 
+# Estimacao com um LAG 
 VWR1 = gmm(   J
 	,x = cbind(cbapmvwrdata,(cbapmvwrinstr))[,-c(5,7)]
 	,t0=c(beta = 0, gamma = -1)
@@ -91,7 +94,7 @@ VWR1 = gmm(   J
 	,kernel ="Bartlett"
 	)
 
-# Estima??o com DOIS LAGs 
+# Estimacao com DOIS LAGs 
 VWR2 = gmm(   J
 	,x = cbind(cbapmvwrdata,(cbapmvwrinstr))
 	,t0=c(beta = 0, gamma = -1)
@@ -105,7 +108,7 @@ VWR2 = gmm(   J
 
 ######## Tabela 3 #########
 
-# Estima??o com um LAG 
+# Estimacao com um LAG 
 EWRVWR1 = gmm(   J
 	,x = cbind(rbind(cbapmewrdata,cbapmvwrdata),rbind(cbapmewrinstr,cbapmvwrinstr))[,-c(5,7)]
 	,t0=c(beta = 0, gamma = -1)
@@ -117,7 +120,7 @@ EWRVWR1 = gmm(   J
 	,kernel ="Bartlett"
 	)
 
-# Estima??o com DOIS LAGs 
+# Estimacao com DOIS LAGs 
 EWRVWR2 = gmm(   J
 	,x = cbind(rbind(cbapmewrdata,cbapmvwrdata),rbind(cbapmewrinstr,cbapmvwrinstr))
 	,t0=c(beta = 0, gamma = -1)
@@ -128,6 +131,7 @@ EWRVWR2 = gmm(   J
 	,vcov="HAC"
 	,kernel ="Bartlett"
 	)
+
 # Resultados #
 rbind(
 EWR1=EWR1$coefficients,
