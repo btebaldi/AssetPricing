@@ -1,3 +1,10 @@
+---
+title: "Lars Peter Hansen and Kenneth J. Singleton (1982) Replication"
+author: "Bruno Barbosa"
+date: "9/28/2019"
+output: html_document
+---
+
 # Limpeza de variaveis antigas
 ```{r}
 rm(list = ls())
