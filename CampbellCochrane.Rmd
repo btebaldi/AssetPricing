@@ -16,10 +16,10 @@ library(gmm)
 library(readxl)
 library(dplyr)
 library(ggplot2)
+library(knitr)
 ```
 
-# Parameters assumed
-
+# Parametros assumidos
 ```{r}
 g = 0.0189;     # Mean consumption growth rate
 sigma = 0.015;  # Standard deviation of log consumption growth
@@ -33,7 +33,7 @@ rho = 0.2;      # correlation between deltad e deltac
 delta = 0.89; # Utility discount factor
 ```
 
-We choose the subjective discount factor δ to match the risk-free rate with the average real return on Treasury bills.
+O fator de desconto subjetivo $\delta$,foi escolhido de maneira a fixar a taxa livre de risco com o retorno real médio das letras do Tesouro.
 
 
 # Equaçoes
@@ -55,6 +55,35 @@ S_bar = S_bar.func(sigma, gamma, phi)
 S_max = S_max.func(S_bar)
 ```
 
+# Tabela I
+```{r, results='asis'}
+
+
+Table_I = tibble(Parameter =c("Mean consumption growth (%)",
+  "Standard deviation of consumption growth (%)",
+  "Log risk-free rate (%)",
+  "Persistence coefficient",
+  "Utility curvature",
+  "Standard deviation of dividend growth (%)",
+  "Correlation between D_d and D_c",
+  "Subjective discount factor",
+  "Steady-state surplus consumption ratio",
+  "Maximum surplus consumption ratio"), Value = NA)
+
+Table_I[1,2] = g
+Table_I[2,2] = sigma
+Table_I[3,2] = rf
+Table_I[4,2] = phi
+Table_I[5,2] = gamma 
+Table_I[6,2] = sigmaw
+Table_I[7,2] = rho
+Table_I[8,2] = delta
+Table_I[9,2] = S_bar
+Table_I[10,2] = S_max
+
+kable(Table_I, caption = "Parameter Choices")
+
+```
 
 # Lambda function
 define as funções de $\lambda(s_t)$ e $dx_{t+1} / {dc_{t+1}}$
@@ -81,7 +110,7 @@ dX <- function(S_grid, S_bar, S_max) {
 
 ```
 
-# Graficos
+# Figura I
 ```{r}
 # discretização do eixo x
 S_grid = seq(from=0, to=S_max*1.05, length.out = 1000)
@@ -96,7 +125,7 @@ captionText = sprintf("The vertical solid line shows the steady-state surplus co
 ggplot(data) +
   geom_line(aes(x=S_grid, y=lambda)) +
   geom_vline(xintercept = S_bar, colour = "black") +
-  geom_vline(xintercept = S_max, colour = "black", linetype="dotted") +
+  geom_vline(xintercept = S_max, colour = "red", linetype="dashed", size = .8) +
   labs(title= "Sensitivity function of lambda(s)", # Title
        subtitle="", # Subtitle
        caption=captionText, # Caption
@@ -107,7 +136,7 @@ ggplot(data) +
 ggplot(data) +
   geom_line(aes(x=S_grid, y=dX)) +
   geom_vline(xintercept = S_bar, colour = "black") +
-  geom_vline(xintercept = S_max, colour = "black", linetype="dotted") +
+  geom_vline(xintercept = S_max, colour = "red", linetype="dashed", size = .8) +
   labs(title="Implied sensitivity of habit x to contemporaneous consumption", # Title
        subtitle="", # Subtitle
        caption=captionText, # Caption
@@ -116,58 +145,70 @@ ggplot(data) +
        color=NULL)
 ```
 
+# Figura II
+A Figura 2 apresenta a distribuição estacionária da taxa de consumo excedente. Utilizamos uma aproximação com tempo discreto, devido a utilização de tempo discreto alguns valores ultrapassao S_max.
+```{r}
+# Numero de choques ensaiados
+T1 = 500000
 
+# Usa rnorm para gerar T1 choques
+z = g + sigma*rnorm(T1);
+
+# inicializa a variavel de resposta
+ln_s = rep(0, T1);
+ER_sigam = rep(NA, T1);
+Mt = rep(NA, T1);
+
+# inicia em steady state
+ln_s[1] = log(S_bar);
+
+for(t in 1:(T1-1)){
+  
+  # Dado s(t), calcula lambda(s(t)), e depois s(t+1)
+  if(ln_s[t] <= log(S_max)) {
+    lb = (1/S_bar)*sqrt(1 -2*(ln_s[t] - log(S_bar)))-1
+  } else {
+    lb = 0
+  }
+  
+  ln_s[t+1] = phi*ln_s[t] + (1-phi)*log(S_bar) + lb*( z[t+1] - g);
+  ER_sigam[t+1] = gamma*sigma*(1+lb)
+  Mt[t+1] = exp(log(delta)-gamma*z[t+1] - gamma* ln_s[t+1] - ln_s[t])
+};
+
+# junta os dados em uma tabela 
+DataSurplus = tibble(ln_s = ln_s, S = exp(ln_s))
+
+ggplot(DataSurplus, aes(x = S)) +
+  geom_histogram(aes(y = ..density..), # the histogram will display "density" on its y-axis
+                 bins = 50, colour = "blue", fill = "white") +
+  geom_vline(xintercept = S_bar, colour = "black") +
+  geom_vline(xintercept = S_max, colour = "red", linetype="dashed", size = .8) +
+  geom_density(alpha = .2, fill="#FF6655") #overlay with a transparent (alpha value) density plot
+```
+
+# Tabela II
 ```{r}
 
-# Steady state surplus ratio, log surplus ratio, and maximum log surplus
+Table_II = tibble( Statistic = c("E(D_c)",
+"sigma(D_c)",
+"E(rf)",
+"E(r - rf)/sigma(r - rf)",
+"E(R - Rf)/sigma(R - Rf)",
+"E(r - rf)",
+"sigma(r - rf)",
+"exp[E(p - d)]",
+"sigam(p - d)"), Value = NA )
 
-T1 = 10000
-# Use randn to generate T1+1 N(g,sigma) variates
-z = g + sigma*rnorm(T1+1);
-
-
-# Repositories to collect data
-ln_s = rep(log(S_bar), T1+1);
-beta = rep(0, T1+1);
-
-# Start log(S) at log(Sbar):
-# s[] = log(S_bar);
-
-for(t in 1: T1){
-
-  # Given s(t), calculate lambda(s(t)), then s(t+1) and beta(t)
-	# ln_s[t] = min(ln_s[t],log(S_max));
-	if(ln_s[t] <= log(S_max)) {
-    lb = (1/S_bar)*sqrt(1 -2*(ln_s[t] - log(S_bar)))-1
-	} else {
-	   ln_s[t] = log(S_max)
-	  lb = 0
-	}
-  
-	ln_s[t+1] = phi*ln_s[t] + (1-phi)*log(S_bar) + lb*( z[t+1] - g);
-	beta[t] = delta*exp(-gamma*((phi-1)*(ln_s[t]-log(S_bar))-lb*g));
-};
-  
-ttt = tibble(A = ln_s, S = exp(ln_s))
-
-
-
-ggplot(ttt[round(nrow(ttt)/2,0):nrow(ttt),], aes(x = S)) +
-  geom_histogram(aes(y = ..density..), # the histogram will display "density" on its y-axis
-                 bins = 30, colour = "blue", fill = "white") +
-  geom_vline(xintercept = S_bar, colour = "black") +
-  geom_vline(xintercept = S_max, colour = "black", linetype="dotted") +
-  geom_density(alpha = .2, fill="#FF6655") #overlay with a transparent (alpha value) density plot
-
-hist(ln_s)
-# Discard initial values. Resulting s & beta are same length, and periods
-# are matched up.
-beta = beta(discard+1:end);
-s = s(discard+1:end-1);
-end
-# Generate figure 1 in paper with [beta,s] = surplus(100,100). Plot beta
-# versus 1:100 (panel A) and beta versus s (panel B). [Actually plots
-# sorted beta versus sorted s where sort order is smallest s to biggest s.
-
-
+Table_II[1,2] = mean(z)
+Table_II[2,2] = var(z)^0.5
+Table_II[3,2] = exp(mean(Mt, na.rm = T)^(-1))
+Table_II[4,2] = mean(exp(ln_s))/var(exp(ln_s))^0.5
+Table_II[5,2] = mean(ER_sigam, na.rm = T)
+Table_II[6,2] = mean(exp(ln_s))
+Table_II[7,2] = var(exp(ln_s))^0.5
+Table_II[8,2] = exp(mean(exp(ln_s))/(0.96-1) +mean(z))
+Table_II[9,2] = NA
+kable(Table_II, caption = "Means and Standard Deviations")
 ```
+
