@@ -130,7 +130,7 @@ ggplot(data) +
        subtitle="", # Subtitle
        caption=captionText, # Caption
        y="lambda(s)", 
-       x='Surplus consumption ration S=(C_X)/C',
+       x='Surplus consumption ratio S=(C_X)/C',
        color=NULL)
   
 ggplot(data) +
@@ -141,7 +141,7 @@ ggplot(data) +
        subtitle="", # Subtitle
        caption=captionText, # Caption
        y='dx\\dc', 
-       x='Surplus consumption ration S=(C_X)/C',
+       x='Surplus consumption ratio S=(C_X)/C',
        color=NULL)
 ```
 
@@ -179,12 +179,19 @@ for(t in 1:(T1-1)){
 # junta os dados em uma tabela 
 DataSurplus = tibble(ln_s = ln_s, S = exp(ln_s))
 
-ggplot(DataSurplus, aes(x = S)) +
-  geom_histogram(aes(y = ..density..), # the histogram will display "density" on its y-axis
-                 bins = 50, colour = "blue", fill = "white") +
-  geom_vline(xintercept = S_bar, colour = "black") +
-  geom_vline(xintercept = S_max, colour = "red", linetype="dashed", size = .8) +
-  geom_density(alpha = .2, fill="#FF6655") #overlay with a transparent (alpha value) density plot
+DataSurplus = DataSurplus[DataSurplus$ln_s >= -5, ]
+
+ggplot(DataSurplus, aes(x = ln_s)) +
+  geom_histogram(aes(y = ..density..), bins = 70, colour = "blue", fill = "white") +
+  geom_density(alpha = .2, fill="#FF6655") + #overlay with a transparent (alpha value)
+  geom_vline(xintercept = log(S_bar), colour = "black") +
+  geom_vline(xintercept = log(S_max), colour = "red", linetype="dashed", size = .8) +
+  labs(title="Unconditional distribution of the surplus consumption ratio", # Title
+       subtitle="", # Subtitle
+       caption=captionText, # Caption
+       y='density', 
+       x='Surplus consumption ratio',
+       color=NULL)
 ```
 
 # Tabela II
